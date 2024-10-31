@@ -1,0 +1,77 @@
+---
+title: "Initial identification"
+format: html
+editor: visual
+---
+
+```{r load_libraries, include=FALSE}
+library(psminer)
+library(readr)
+```
+
+
+The following data provides tentative classifications of the samples based on exact matches of a subset of short DNA sequences.
+These are intended to be preliminary identifications.
+For more robust identifications based on whole genome sequences, see "Phylogenetic context" section below.
+
+::: panel-tabset
+### Taxonomic classification summary
+
+```{r}
+top_hits <- sendsketch_parsed(params$inputs, only_best = TRUE)
+unique_tax <- unique(sub(top_hits$taxonomy, pattern = ';s:(.+);.+$', replacement = ';s:\\1')) # ignore below species level information
+is_single_taxon <- length(unique_tax) == 1
+```
+
+```{r fig.height = 8, eval = !is_single_taxon}
+psminer::sendsketch_taxonomy_plot(top_hits)
+```
+
+```{r, results='asis', eval = !is_single_taxon}
+cat('
+::: {.callout-tip collapse="true"}
+## About this plot
+
+This plot shows the distribution of tentative taxonomic classifications for all samples.
+Only the "highest scoring" results for each sample is considered.
+
+Hover your cursor over parts of the sunburst plot will display the number of samples in each taxon.
+Clicking on a section will subset the plot to that taxon.
+Clicking on the middle will undo the subset.
+:::
+')
+```
+
+```{r, results='asis', eval = is_single_taxon}
+n_samp <- nrow(top_hits)
+formatted_classification <- unique_tax %>%
+    gsub(pattern = "[a-z]+:", replacement = "") %>%
+    gsub(pattern = ";", replacement = " > ")
+cat(paste0(
+"Initial classification of ", ifelse(n_samp == 1, "the sample", paste0(n_samp, " samples")),
+" identified ", ifelse(n_samp == 1, "it", "all of them"), " as:\n\n",
+"**", formatted_classification, "**"
+))
+```
+
+
+### Per-sample classification
+
+```{r sketchtable, fig.width=5}
+sendsketch_table(top_hits)
+```
+
+::: {.callout-tip collapse="true"}
+## About this table
+
+This table shows the "highest scoring" tentative taxonomic classification for each sample.
+Included metrics can provide insights into how each sample compares with reference genomes on online databases and the likelihood these comparisons are valid.
+
+* **Sample:** The sample ID submitted by the user.
+* **WKID:** Weighted k-mer Identity, adjusted for genome size differences.
+* **ANI:** An estimate of average nucleotide identity (ANI), derived from WKID and kmer length.
+* **Completeness:** The percentage of the reference genome represented in the query.
+* **Top Hit:** The name of the reference genome most similar to each sample based on the scoring criteria used.
+:::
+
+:::

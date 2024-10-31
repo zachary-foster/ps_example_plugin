@@ -1,0 +1,4 @@
+name: Initial Identificaiton
+requirements:
+    - SKETCH_COMPARISON
+    - GENOME_ASSEMBLY
